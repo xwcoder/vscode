@@ -5,7 +5,7 @@
 
 import { IntervalTimer } from 'vs/base/common/async';
 import { memoize } from 'vs/base/common/decorators';
-import { FileAccess } from 'vs/base/common/network';
+// import { FileAccess } from 'vs/base/common/network';
 import { IProductService } from 'vs/platform/product/common/productService';
 import { AbstractSignService, IVsdaValidator } from 'vs/platform/sign/common/abstractSignService';
 import { ISignService } from 'vs/platform/sign/common/sign';
@@ -61,7 +61,7 @@ export class SignService extends AbstractSignService implements ISignService {
 		let [wasm] = await Promise.all([
 			this.getWasmBytes(),
 			new Promise<void>((resolve, reject) => {
-				require(['vsda'], resolve, reject);
+				// require(['vsda'], resolve, reject);
 
 				// todo@connor4312: there seems to be a bug(?) in vscode-loader with
 				// require() not resolving in web once the script loads, so check manually
@@ -72,7 +72,6 @@ export class SignService extends AbstractSignService implements ISignService {
 				}, 50);
 			}).finally(() => checkInterval!.dispose()),
 		]);
-
 
 		const keyBytes = new TextEncoder().encode(this.productService.serverLicense?.join('\n') || '');
 		for (let i = 0; i + STEP_SIZE < keyBytes.length; i += STEP_SIZE) {
@@ -86,11 +85,12 @@ export class SignService extends AbstractSignService implements ISignService {
 	}
 
 	private async getWasmBytes(): Promise<ArrayBuffer> {
-		const response = await fetch(FileAccess.asBrowserUri('vsda/../vsda_bg.wasm').toString(true));
-		if (!response.ok) {
-			throw new Error('error loading vsda');
-		}
+		throw new Error('error loading vsda');
+		// const response = await fetch(FileAccess.asBrowserUri('vsda/../vsda_bg.wasm').toString(true));
+		// if (!response.ok) {
+		// 	throw new Error('error loading vsda');
+		// }
 
-		return response.arrayBuffer();
+		// return response.arrayBuffer();
 	}
 }

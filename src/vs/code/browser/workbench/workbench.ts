@@ -21,6 +21,7 @@ import { AuthenticationSessionInfo } from 'vs/workbench/services/authentication/
 import type { IWorkspace, IWorkspaceProvider } from 'vs/workbench/services/host/browser/browserHostService';
 import type { IURLCallbackProvider } from 'vs/workbench/services/url/browser/urlService';
 import { create } from 'vs/workbench/workbench.web.main';
+import { extractLocalHostUriMetaDataForPortMapping, TunnelOptions, TunnelCreationOptions } from 'vs/platform/tunnel/common/tunnel';
 
 interface ISecretStorageCrypto {
 	seal(data: string): Promise<string>;
@@ -304,7 +305,8 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 			this.startListening();
 		}
 
-		return URI.parse(window.location.href).with({ path: this._callbackRoute, query: queryParams.join('&') });
+		const path = (window.location.pathname + '/' + this._callbackRoute).replace(/\/\/+/g, '/');
+		return URI.parse(window.location.href).with({ path: path, query: queryParams.join('&') });
 	}
 
 	private startListening(): void {
@@ -569,7 +571,7 @@ function readCookie(name: string): string | undefined {
 	if (!configElement || !configElementAttribute) {
 		throw new Error('Missing web configuration element');
 	}
-	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = JSON.parse(configElementAttribute);
+	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = { ...JSON.parse(configElementAttribute), remoteAuthority: location.host };
 	const secretStorageKeyPath = readCookie('vscode-secret-key-path');
 	const secretStorageCrypto = secretStorageKeyPath && ServerKeyedAESCrypto.supported()
 		? new ServerKeyedAESCrypto(secretStorageKeyPath) : new TransparentCrypto();
@@ -584,5 +586,39 @@ function readCookie(name: string): string | undefined {
 		secretStorageProvider: config.remoteAuthority && !secretStorageKeyPath
 			? undefined /* with a remote without embedder-preferred storage, store on the remote */
 			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
+
+		resolveExternalUri: (uri: URI): Promise<URI> => {
+			let resolvedUri = uri;
+			const localhostMatch = extractLocalHostUriMetaDataForPortMapping(resolvedUri);
+			if (localhostMatch && resolvedUri.authority !== location.host) {
+				if (config.productConfiguration && config.productConfiguration.proxyEndpointTemplate) {
+					const renderedTemplate = config.productConfiguration.proxyEndpointTemplate
+						.replace('{{port}}', localhostMatch.port.toString())
+						.replace('{{host}}', window.location.host);
+					resolvedUri = URI.parse(new URL(renderedTemplate, window.location.href).toString());
+				} else {
+					throw new Error(`Failed to resolve external URI: ${uri.toString()}. Could not determine base url because productConfiguration missing.`);
+				}
+			}
+			// If not localhost, return unmodified.
+			return Promise.resolve(resolvedUri);
+		},
+		tunnelProvider: {
+			tunnelFactory: (tunnelOptions: TunnelOptions, tunnelCreationOptions: TunnelCreationOptions) => {
+				const onDidDispose: Emitter<void> = new Emitter();
+				let isDisposed = false;
+				return Promise.resolve({
+					remoteAddress: tunnelOptions.remoteAddress,
+					localAddress: `localhost:${tunnelOptions.remoteAddress.port}`,
+					onDidDispose: onDidDispose.event,
+					dispose: () => {
+						if (!isDisposed) {
+							isDisposed = true;
+							onDidDispose.fire();
+						}
+					}
+				});
+			}
+		}
 	});
 })();

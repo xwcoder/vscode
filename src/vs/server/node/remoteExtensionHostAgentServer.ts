@@ -41,6 +41,7 @@ import { determineServerConnectionToken, requestHasValidConnectionToken as httpR
 import { IServerEnvironmentService, ServerParsedArgs } from 'vs/server/node/serverEnvironmentService';
 import { setupServerServices, SocketServer } from 'vs/server/node/serverServices';
 import { CacheControl, serveError, serveFile, WebClientServer } from 'vs/server/node/webClientServer';
+import * as proxy from './proxy';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
@@ -169,6 +170,10 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 			return serveFile(filePath, CacheControl.ETAG, this._logService, req, res, responseHeaders);
 		}
 
+		if (proxy.isProxyRoute(pathname)) {
+			return proxy.handle(req, res, parsedUrl);
+		}
+
 		// workbench web UI
 		if (this._webClientServer) {
 			this._webClientServer.handle(req, res, parsedUrl);
@@ -200,6 +205,14 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 		if (req.headers['upgrade'] === undefined || req.headers['upgrade'].toLowerCase() !== 'websocket') {
 			socket.end('HTTP/1.1 400 Bad Request');
 			return;
+		}
+
+		if (req.url) {
+			const parsedUrl = url.parse(req.url, true);
+			const pathname = parsedUrl.pathname;
+			if (pathname && proxy.isProxyRoute(pathname)) {
+				return proxy.handle(req, socket, parsedUrl);
+			}
 		}
 
 		// https://tools.ietf.org/html/rfc6455#section-4

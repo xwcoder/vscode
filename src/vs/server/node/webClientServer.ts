@@ -269,17 +269,22 @@ export class WebClientServer {
 			return void res.end();
 		}
 
-		const getFirstHeader = (headerName: string) => {
-			const val = req.headers[headerName];
-			return Array.isArray(val) ? val[0] : val;
-		};
+		// const getFirstHeader = (headerName: string) => {
+		// 	const val = req.headers[headerName];
+		// 	return Array.isArray(val) ? val[0] : val;
+		// };
 
 		const useTestResolver = (!this._environmentService.isBuilt && this._environmentService.args['use-test-resolver']);
+		// For now we are getting the remote authority from the client to avoid
+		// needing specific configuration for reverse proxies to work.  Set this to
+		// something invalid to make sure we catch code that is using this value
+		// from the backend when it should not.
 		const remoteAuthority = (
 			useTestResolver
 				? 'test+test'
-				: (getFirstHeader('x-original-host') || getFirstHeader('x-forwarded-host') || req.headers.host)
+				: 'remote'
 		);
+
 		if (!remoteAuthority) {
 			return serveError(req, res, 400, `Bad request.`);
 		}
@@ -306,6 +311,7 @@ export class WebClientServer {
 		} : undefined;
 
 		const productConfiguration = <Partial<IProductConfiguration>>{
+			proxyEndpointTemplate: './proxy/{{port}}/',
 			embedderIdentifier: 'server-distro',
 			extensionsGallery: this._webExtensionResourceUrlTemplate ? {
 				...this._productService.extensionsGallery,
@@ -340,8 +346,8 @@ export class WebClientServer {
 		const values: { [key: string]: string } = {
 			WORKBENCH_WEB_CONFIGURATION: asJSON(workbenchWebConfiguration),
 			WORKBENCH_AUTH_SESSION: authSessionInfo ? asJSON(authSessionInfo) : '',
-			WORKBENCH_WEB_BASE_URL: this._staticRoute,
-			WORKBENCH_NLS_BASE_URL: nlsBaseUrl ? `${nlsBaseUrl}${!nlsBaseUrl.endsWith('/') ? '/' : ''}${this._productService.commit}/${this._productService.version}/` : '',
+			WORKBENCH_WEB_BASE_URL: '.' + this._staticRoute,
+			WORKBENCH_NLS_BASE_URL: '.' + (nlsBaseUrl ? `${nlsBaseUrl}${!nlsBaseUrl.endsWith('/') ? '/' : ''}${this._productService.commit}/${this._productService.version}/` : ''),
 		};
 
 		if (useTestResolver) {
@@ -366,7 +372,7 @@ export class WebClientServer {
 			'default-src \'self\';',
 			'img-src \'self\' https: data: blob:;',
 			'media-src \'self\';',
-			`script-src 'self' 'unsafe-eval' ${this._getScriptCspHashes(data).join(' ')} 'sha256-fh3TwPMflhsEIpR8g1OYTIMVWhXTLcjQ9kh2tIpmv54=' ${useTestResolver ? '' : `http://${remoteAuthority}`};`, // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+			`script-src 'self' 'unsafe-eval' ${this._getScriptCspHashes(data).join(' ')} 'sha256-fh3TwPMflhsEIpR8g1OYTIMVWhXTLcjQ9kh2tIpmv54=' ${useTestResolver ? '' : ''};`, // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
 			'child-src \'self\';',
 			`frame-src 'self' https://*.vscode-cdn.net data:;`,
 			'worker-src \'self\' data: blob:;',

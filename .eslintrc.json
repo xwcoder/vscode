@@ -278,7 +278,8 @@
 							"xterm-headless",
 							"yauzl",
 							"yazl",
-							"zlib"
+							"zlib",
+							"http-proxy"
 						]
 					},
 					{

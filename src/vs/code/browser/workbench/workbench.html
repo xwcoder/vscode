@@ -36,24 +36,24 @@
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js"></script>
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js"></script>
 	<script>
-		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location.origin).toString();
+		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location).toString();
 		Object.keys(self.webPackagePaths).map(function (key, index) {
 			self.webPackagePaths[key] = `${baseUrl}/node_modules/${key}/${self.webPackagePaths[key]}`;
 		});
 
 		// Set up nls if the user is not using the default language (English)
-		const nlsConfig = {};
+		// const nlsConfig = {};
 		// Normalize locale to lowercase because translationServiceUrl is case-sensitive.
 		// ref: https://github.com/microsoft/vscode/issues/187795
-		const locale = window.localStorage.getItem('vscode.nls.locale') || navigator.language.toLowerCase();
-		if (!locale.startsWith('en')) {
-			nlsConfig['vs/nls'] = {
-				availableLanguages: {
-					'*': locale
-				},
-				translationServiceUrl: '{{WORKBENCH_NLS_BASE_URL}}'
-			};
-		}
+		// const locale = window.localStorage.getItem('vscode.nls.locale') || navigator.language.toLowerCase();
+		// if (!locale.startsWith('en')) {
+		// 	nlsConfig['vs/nls'] = {
+		// 		availableLanguages: {
+		// 			'*': locale
+		// 		},
+		// 		translationServiceUrl: '{{WORKBENCH_NLS_BASE_URL}}'
+		// 	};
+		// }
 
 		require.config({
 			baseUrl: `${baseUrl}/out`,
@@ -67,7 +67,7 @@
 				}
 			}),
 			paths: self.webPackagePaths,
-			...nlsConfig
+			// ...nlsConfig
 		});
 	</script>
 	<script>

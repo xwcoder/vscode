@@ -45,6 +45,7 @@ export interface IExtensionHostInitData {
 	consoleForward: { includeStack: boolean; logNative: boolean };
 	uiKind: UIKind;
 	messagePorts?: ReadonlyMap<string, MessagePortLike>;
+	windowLocation?: any;
 }
 
 export interface IEnvironment {

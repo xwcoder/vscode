@@ -55,6 +55,7 @@ export type ExtensionVirtualWorkspaceSupport = {
 };
 
 export interface IProductConfiguration {
+	readonly proxyEndpointTemplate?: string;
 	readonly version: string;
 	readonly date?: string;
 	readonly quality?: string;

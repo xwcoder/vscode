@@ -7280,6 +7280,11 @@ declare module 'vscode' {
 		 * The current `Extension` instance.
 		 */
 		readonly extension: Extension<any>;
+
+		/**
+		 * The window parent location
+		 */
+		readonly windowLocation?: any;
 	}
 
 	/**
