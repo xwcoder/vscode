@@ -599,9 +599,7 @@ function readCookie(name: string): string | undefined {
 		settingsSyncOptions: config.settingsSyncOptions ? { enabled: config.settingsSyncOptions.enabled, } : undefined,
 		workspaceProvider: WorkspaceProvider.create(config),
 		urlCallbackProvider: new LocalStorageURLCallbackProvider(config.callbackRoute),
-		secretStorageProvider: config.remoteAuthority && !secretStorageKeyPath
-			? undefined /* with a remote without embedder-preferred storage, store on the remote */
-			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
+		secretStorageProvider: new LocalStorageSecretStorageProvider(secretStorageCrypto),
 
 		resolveExternalUri: (uri: URI): Promise<URI> => {
 			let resolvedUri = uri;
