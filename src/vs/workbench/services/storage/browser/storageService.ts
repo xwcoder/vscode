@@ -18,6 +18,7 @@ import { AbstractStorageService, isProfileUsingDefaultStorage, IS_NEW_KEY, Stora
 import { isUserDataProfile, IUserDataProfile } from '../../../../platform/userDataProfile/common/userDataProfile.js';
 import { IAnyWorkspaceIdentifier } from '../../../../platform/workspace/common/workspace.js';
 import { IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
+import { hash } from '../../../../base/common/hash.js';
 
 export class BrowserStorageService extends AbstractStorageService {
 
@@ -298,7 +299,7 @@ export class IndexedDBStorageDatabase extends Disposable implements IIndexedDBSt
 	}
 
 	static async createWorkspaceStorage(workspaceId: string, logService: ILogService): Promise<IIndexedDBStorageDatabase> {
-		return IndexedDBStorageDatabase.create({ id: workspaceId }, logService);
+		return IndexedDBStorageDatabase.create({ id: workspaceId + '-' + hash(location.pathname.toString().replace(/\/$/, '')).toString(16) }, logService);
 	}
 
 	static async create(options: IndexedDBStorageDatabaseOptions, logService: ILogService): Promise<IIndexedDBStorageDatabase> {
