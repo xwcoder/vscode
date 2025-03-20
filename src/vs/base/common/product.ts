@@ -197,6 +197,8 @@ export interface IProductConfiguration {
 	readonly chatParticipantRegistry?: string;
 
 	readonly emergencyAlertUrl?: string;
+
+	readonly proxyEndpointTemplate?: string;
 }
 
 export interface ITunnelApplicationConfig {

@@ -334,6 +334,7 @@ export class WebClientServer {
 		} : undefined;
 
 		const productConfiguration = {
+			proxyEndpointTemplate: './proxy/{{port}}/',
 			// embedderIdentifier: 'server-distro',
 			// extensionsGallery: this._webExtensionResourceUrlTemplate && this._productService.extensionsGallery ? {
 			// 	...this._productService.extensionsGallery,

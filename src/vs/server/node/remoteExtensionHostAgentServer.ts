@@ -39,6 +39,7 @@ import { determineServerConnectionToken, requestHasValidConnectionToken as httpR
 import { IServerEnvironmentService, ServerParsedArgs } from './serverEnvironmentService.js';
 import { setupServerServices, SocketServer } from './serverServices.js';
 import { CacheControl, serveError, serveFile, WebClientServer } from './webClientServer.js';
+import * as proxy from './proxy.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
@@ -104,11 +105,6 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 	}
 
 	public async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-		// Only serve GET requests
-		if (req.method !== 'GET') {
-			return serveError(req, res, 405, `Unsupported method ${req.method}`);
-		}
-
 		if (!req.url) {
 			return serveError(req, res, 400, `Bad request.`);
 		}
@@ -118,6 +114,15 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 
 		if (!pathname) {
 			return serveError(req, res, 400, `Bad request.`);
+		}
+
+		if (proxy.isProxyRoute(pathname)) {
+			return proxy.handle(req, res, parsedUrl);
+		}
+
+		// Only serve GET requests
+		if (req.method !== 'GET') {
+			return serveError(req, res, 405, `Unsupported method ${req.method}`);
 		}
 
 		// Serve from both '/' and serverBasePath
@@ -211,6 +216,14 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 		if (req.headers['upgrade'] === undefined || req.headers['upgrade'].toLowerCase() !== 'websocket') {
 			socket.end('HTTP/1.1 400 Bad Request');
 			return;
+		}
+
+		if (req.url) {
+			const parsedUrl = url.parse(req.url, true);
+			const pathname = parsedUrl.pathname;
+			if (pathname && proxy.isProxyRoute(pathname)) {
+				return proxy.handle(req, socket, parsedUrl);
+			}
 		}
 
 		// https://tools.ietf.org/html/rfc6455#section-4

@@ -21,6 +21,7 @@ import type { IWorkbenchConstructionOptions, IWorkspace, IWorkspaceProvider } fr
 import { AuthenticationSessionInfo } from '../../../workbench/services/authentication/browser/authenticationService.js';
 import type { IURLCallbackProvider } from '../../../workbench/services/url/browser/urlService.js';
 import { create } from '../../../workbench/workbench.web.main.internal.js';
+import { extractLocalHostUriMetaDataForPortMapping, TunnelOptions, TunnelCreationOptions } from '../../../platform/tunnel/common/tunnel.js';
 
 interface ISecretStorageCrypto {
 	seal(data: string): Promise<string>;
@@ -601,5 +602,39 @@ function readCookie(name: string): string | undefined {
 		secretStorageProvider: config.remoteAuthority && !secretStorageKeyPath
 			? undefined /* with a remote without embedder-preferred storage, store on the remote */
 			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
+
+		resolveExternalUri: (uri: URI): Promise<URI> => {
+			let resolvedUri = uri;
+			const localhostMatch = extractLocalHostUriMetaDataForPortMapping(resolvedUri);
+			if (localhostMatch && resolvedUri.authority !== location.host) {
+				if (config.productConfiguration && config.productConfiguration.proxyEndpointTemplate) {
+					const renderedTemplate = config.productConfiguration.proxyEndpointTemplate
+						.replace('{{port}}', localhostMatch.port.toString())
+						.replace('{{host}}', window.location.host);
+					resolvedUri = URI.parse(new URL(renderedTemplate, window.location.href).toString());
+				} else {
+					throw new Error(`Failed to resolve external URI: ${uri.toString()}. Could not determine base url because productConfiguration missing.`);
+				}
+			}
+			// If not localhost, return unmodified.
+			return Promise.resolve(resolvedUri);
+		},
+		tunnelProvider: {
+			tunnelFactory: (tunnelOptions: TunnelOptions, tunnelCreationOptions: TunnelCreationOptions) => {
+				const onDidDispose: Emitter<void> = new Emitter();
+				let isDisposed = false;
+				return Promise.resolve({
+					remoteAddress: tunnelOptions.remoteAddress,
+					localAddress: `localhost:${tunnelOptions.remoteAddress.port}`,
+					onDidDispose: onDidDispose.event,
+					dispose: () => {
+						if (!isDisposed) {
+							isDisposed = true;
+							onDidDispose.fire();
+						}
+					}
+				});
+			}
+		}
 	});
 })();
