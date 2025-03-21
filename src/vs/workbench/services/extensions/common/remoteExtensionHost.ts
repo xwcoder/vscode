@@ -252,7 +252,8 @@ export class RemoteExtensionHost extends Disposable implements IExtensionHost {
 			loggers: [...this._loggerService.getRegisteredLoggers()],
 			logsLocation: remoteInitData.extensionHostLogsPath,
 			autoStart: (this.startup === ExtensionHostStartup.EagerAutoStart),
-			uiKind: platform.isWeb ? UIKind.Web : UIKind.Desktop
+			uiKind: platform.isWeb ? UIKind.Web : UIKind.Desktop,
+			windowLocation: window?.parent?.location
 		};
 	}
 

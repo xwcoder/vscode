@@ -564,7 +564,8 @@ export abstract class AbstractExtHostExtensionService extends Disposable impleme
 					}
 
 					return messagePassingProtocol;
-				}
+				},
+				windowLocation: that._initData.windowLocation
 			});
 		});
 	}

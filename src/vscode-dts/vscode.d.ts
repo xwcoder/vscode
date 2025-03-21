@@ -8482,6 +8482,11 @@ declare module 'vscode' {
 		 * @see {@link LanguageModelChat.sendRequest}
 		 */
 		readonly languageModelAccessInformation: LanguageModelAccessInformation;
+
+		/**
+		 * The window parent location
+		 */
+		readonly windowLocation?: any;
 	}
 
 	/**

@@ -337,7 +337,8 @@ export class WebWorkerExtensionHost extends Disposable implements IExtensionHost
 				connectionData: null,
 				isRemote: false
 			},
-			uiKind: platform.isWeb ? UIKind.Web : UIKind.Desktop
+			uiKind: platform.isWeb ? UIKind.Web : UIKind.Desktop,
+			windowLocation: window?.parent?.location
 		};
 	}
 }
